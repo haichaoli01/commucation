@@ -92,7 +92,7 @@ unit-test:
 .PHONY: e2e-test
 e2e-test:
 	@echo === running e2e test
-	@go test ./e2e
+	@go test -timeout 30m ./e2e
 
 # docker image
 image: spdkcsi

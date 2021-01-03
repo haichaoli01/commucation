@@ -3,6 +3,7 @@ package e2e
 import (
 	"fmt"
 	"time"
+	"context"
 
 	"github.com/onsi/ginkgo"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,90 +34,91 @@ const (
 )
 
 func deployConfigs() {
-	_, err := framework.RunKubectl("-n", nameSpace, "apply", "-f", configMapPath)
+	_, err := framework.RunKubectl(nameSpace, "apply", "-f", configMapPath)
 	if err != nil {
 		e2elog.Logf("failed to create config map %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "apply", "-f", secretPath)
+	_, err = framework.RunKubectl(nameSpace, "apply", "-f", secretPath)
 	if err != nil {
 		e2elog.Logf("failed to create secret: %s", err)
 	}
 }
 
 func deleteConfigs() {
-	_, err := framework.RunKubectl("-n", nameSpace, "delete", "-f", configMapPath)
+	_, err := framework.RunKubectl(nameSpace, "delete", "-f", configMapPath)
 	if err != nil {
 		e2elog.Logf("failed to delete config map: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "delete", "-f", secretPath)
+	_, err = framework.RunKubectl(nameSpace, "delete", "-f", secretPath)
 	if err != nil {
 		e2elog.Logf("failed to delete secret: %s", err)
 	}
 }
 
 func deployCsi() {
-	_, err := framework.RunKubectl("-n", nameSpace, "apply", "-f", controllerRbacPath)
+	_, err := framework.RunKubectl(nameSpace, "apply", "-f", controllerRbacPath)
 	if err != nil {
 		e2elog.Logf("failed to create controller rbac: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "apply", "-f", nodeRbacPath)
+	_, err = framework.RunKubectl(nameSpace, "apply", "-f", nodeRbacPath)
 	if err != nil {
 		e2elog.Logf("failed to create node rbac: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "apply", "-f", controllerPath)
+	_, err = framework.RunKubectl(nameSpace, "apply", "-f", controllerPath)
 	if err != nil {
 		e2elog.Logf("failed to create controller service: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "apply", "-f", nodePath)
+	_, err = framework.RunKubectl(nameSpace, "apply", "-f", nodePath)
 	if err != nil {
 		e2elog.Logf("failed to create node service: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "apply", "-f", storageClassPath)
+	_, err = framework.RunKubectl(nameSpace, "apply", "-f", storageClassPath)
 	if err != nil {
 		e2elog.Logf("failed to create storageclass: %s", err)
 	}
 }
 
 func deleteCsi() {
-	_, err := framework.RunKubectl("-n", nameSpace, "delete", "-f", storageClassPath)
+	_, err := framework.RunKubectl(nameSpace, "delete", "-f", storageClassPath)
 	if err != nil {
 		e2elog.Logf("failed to delete storageclass: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "delete", "-f", nodePath)
+	_, err = framework.RunKubectl(nameSpace, "delete", "-f", nodePath)
 	if err != nil {
 		e2elog.Logf("failed to delete node service: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "delete", "-f", controllerPath)
+	_, err = framework.RunKubectl(nameSpace, "delete", "-f", controllerPath)
 	if err != nil {
 		e2elog.Logf("failed to delete controller service: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "delete", "-f", nodeRbacPath)
+	_, err = framework.RunKubectl(nameSpace, "delete", "-f", nodeRbacPath)
 	if err != nil {
 		e2elog.Logf("failed to delete node rbac: %s", err)
 	}
-	_, err = framework.RunKubectl("-n", nameSpace, "delete", "-f", controllerRbacPath)
+	_, err = framework.RunKubectl(nameSpace, "delete", "-f", controllerRbacPath)
 	if err != nil {
 		e2elog.Logf("failed to delete controller rbac: %s", err)
 	}
 }
 
 func deployTestPod() {
-	_, err := framework.RunKubectl("-n", nameSpace, "apply", "-f", testPodPath)
+	_, err := framework.RunKubectl(nameSpace, "apply", "-f", testPodPath)
 	if err != nil {
 		e2elog.Logf("failed to create test pod: %s", err)
 	}
 }
 
 func deleteTestPod() {
-	_, err := framework.RunKubectl("-n", nameSpace, "delete", "-f", testPodPath)
+	_, err := framework.RunKubectl(nameSpace, "delete", "-f", testPodPath)
 	if err != nil {
 		e2elog.Logf("failed to delete test pod: %s", err)
 	}
 }
 
 func waitForControllerReady(c kubernetes.Interface, timeout time.Duration) error {
+	var ctx context.Context
 	err := wait.PollImmediate(3*time.Second, timeout, func() (bool, error) {
-		sts, err := c.AppsV1().StatefulSets(nameSpace).Get(controllerStsName, metav1.GetOptions{})
+		sts, err := c.AppsV1().StatefulSets(nameSpace).Get(ctx,controllerStsName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -133,7 +135,8 @@ func waitForControllerReady(c kubernetes.Interface, timeout time.Duration) error
 
 func waitForNodeServerReady(c kubernetes.Interface, timeout time.Duration) error {
 	err := wait.PollImmediate(3*time.Second, timeout, func() (bool, error) {
-		ds, err := c.AppsV1().DaemonSets(nameSpace).Get(nodeDsName, metav1.GetOptions{})
+		var ctx context.Context
+		ds, err := c.AppsV1().DaemonSets(nameSpace).Get(ctx, nodeDsName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -150,7 +153,8 @@ func waitForNodeServerReady(c kubernetes.Interface, timeout time.Duration) error
 
 func waitForTestPodReady(c kubernetes.Interface, timeout time.Duration) error {
 	err := wait.PollImmediate(3*time.Second, timeout, func() (bool, error) {
-		pod, err := c.CoreV1().Pods(nameSpace).Get(testPodName, metav1.GetOptions{})
+		var ctx context.Context
+		pod, err := c.CoreV1().Pods(nameSpace).Get(ctx,testPodName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}

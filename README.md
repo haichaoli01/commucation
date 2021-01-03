@@ -92,8 +92,8 @@ Follow [deploy/spdk/README](deploy/spdk/README.md) to deploy SPDK storage servic
   $ cd scripts
   $ sudo ./minikube.sh up
 
-  # Create kubectl shortcut (assume kubectl version 1.17.0)
-  $ sudo ln -s /var/lib/minikube/binaries/v1.17.0/kubectl /usr/local/bin/kubectl
+  # Create kubectl shortcut (assume kubectl version 1.19.3)
+  $ sudo ln -s /var/lib/minikube/binaries/v1.19.3/kubectl /usr/local/bin/kubectl
 
   # Wait for Kubernetes ready
   $ kubectl get pods --all-namespaces

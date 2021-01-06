@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-KUBE_VERSION=${KUBE_VERSION:-v1.17.0}
-MINIKUBE_VERSION=${MINIKUBE_VERSION:-v1.7.3}
+KUBE_VERSION=${KUBE_VERSION:-v1.19.3}
+MINIKUBE_VERSION=${MINIKUBE_VERSION:-v1.16.0}
 MINIKUBE_DRIVER=${MINIKUBE_DRIVER:-none}
 MINIKUBE_ARCH=amd64
 if [ "$(uname -m)" = "aarch64" ]; then
@@ -27,6 +27,7 @@ function install_minikube() {
 case "$1" in
 	up)
 		install_minikube
+		sudo sysctl fs.protected_regular=0
 		echo "=== starting minikube with kubeadm bootstrapper"
 		CHANGE_MINIKUBE_NONE_USER=true minikube start -b kubeadm --kubernetes-version="${KUBE_VERSION}" --vm-driver="${MINIKUBE_DRIVER}"
 		"/var/lib/minikube/binaries/${KUBE_VERSION}/kubectl" cluster-info
